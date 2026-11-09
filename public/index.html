@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CourtChain Management Portal - SWD392 Group 1</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">CC</div>
+        <div class="brand-text">
+          <h1>CourtChain Management Portal</h1>
+          <span>SWD392 Group 1 &bull; PhúPD (HE191603)</span>
+        </div>
+      </div>
+
+      <div class="persona-switcher">
+        <span class="persona-label">Vai trò hiện tại:</span>
+        <select id="personaSelect" class="persona-select">
+          <option value="owner-1" selected>👑 Court Owner (Toàn chuỗi)</option>
+          <option value="manager-1">🏢 Facility Manager (Hòa Lạc)</option>
+          <option value="manager-2">🏢 Facility Manager (Thạch Thất)</option>
+          <option value="staff-1">👤 Staff (Nguyễn Văn A)</option>
+        </select>
+        <span id="roleBadge" class="role-badge badge-owner">OWNER</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs-wrapper">
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="tab-uc48">
+        <span>👥</span> UC48: Quản lý & Vô hiệu hóa Nhân viên
+      </button>
+      <button class="nav-tab" data-tab="tab-uc49">
+        <span>🏸</span> UC49: Tỷ lệ lấp đầy sân (Court Occupancy)
+      </button>
+      <button class="nav-tab" data-tab="tab-uc50">
+        <span>💵</span> UC50: Báo cáo Doanh thu Chi nhánh
+      </button>
+      <button class="nav-tab" data-tab="tab-uc62" id="tabNavUc62">
+        <span>📊</span> UC62: Hiệu suất Toàn chuỗi (Owner)
+      </button>
+      <button class="nav-tab" data-tab="tab-uc63" id="tabNavUc63">
+        <span>📦</span> UC63: Quản lý Kho Toàn chuỗi (Owner)
+      </button>
+    </nav>
+  </div>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+
+    <!-- ========================================== -->
+    <!-- TAB UC48: Deactivate Staff Account         -->
+    <!-- ========================================== -->
+    <div id="tab-uc48" class="tab-pane active">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">👥 Danh sách Nhân viên Chi nhánh (UC48)</h2>
+            <p class="panel-subtitle">Facility Manager / Court Owner vô hiệu hóa tài khoản nhân viên (BR100, BR193, BR209, BR210)</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnRefreshStaff">🔄 Làm mới</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table id="staffTable">
+            <thead>
+              <tr>
+                <th>Mã NV</th>
+                <th>Họ và Tên</th>
+                <th>Chi nhánh</th>
+                <th>Vai trò</th>
+                <th>Trạng thái</th>
+                <th>Ca đang mở (Shift)</th>
+                <th>Token Ver</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="staffTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Audit Logs Table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h3 class="panel-title">📜 Nhật ký vô hiệu hóa (Audit Logs - BR209)</h3>
+            <p class="panel-subtitle">Lưu trữ lịch sử kiểm toán bất biến khi thu hồi quyền truy cập</p>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã Audit</th>
+                <th>Hành động</th>
+                <th>Người thực hiện</th>
+                <th>Nhân viên bị thu hồi</th>
+                <th>Lý do</th>
+                <th>Session thu hồi</th>
+                <th>Thời gian (UTC)</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB UC49: Court Occupancy                  -->
+    <!-- ========================================== -->
+    <div id="tab-uc49" class="tab-pane">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">🏸 Báo cáo Tỷ lệ Lấp đầy Sân (UC49)</h2>
+            <p class="panel-subtitle">Phân tích công suất giờ cao điểm [17:00, 22:00) vs thấp điểm (BR27, BR100, BR216)</p>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <label>Từ ngày:</label>
+            <input type="date" id="occFrom" class="filter-input" value="2026-11-02">
+          </div>
+          <div class="filter-group">
+            <label>Đến ngày:</label>
+            <input type="date" id="occTo" class="filter-input" value="2026-11-09">
+          </div>
+          <div class="filter-group">
+            <label>Môn thể thao:</label>
+            <select id="occSport" class="filter-select">
+              <option value="">Tất cả môn</option>
+              <option value="BADMINTON">Cầu lông (Badminton)</option>
+              <option value="PICKLEBALL">Pickleball</option>
+              <option value="TABLE_TENNIS">Bóng bàn (Table Tennis)</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Khung giờ:</label>
+            <select id="occPeriod" class="filter-select">
+              <option value="ALL">Toàn bộ giờ hoạt động (06:00 - 23:00)</option>
+              <option value="PEAK">Giờ cao điểm (Peak: 17:00 - 22:00)</option>
+              <option value="OFF_PEAK">Giờ thấp điểm (Off-Peak)</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="btnFilterOccupancy">🔍 Áp dụng</button>
+        </div>
+
+        <!-- KPI Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card info">
+            <div class="kpi-title">Tỷ lệ lấp đầy chung (BR216)</div>
+            <div class="kpi-value" id="occUtilization">0%</div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="occProgressBar" style="width: 0%"></div>
+            </div>
+            <div class="kpi-sub" id="occHoursComparison">0h đã dùng / 0h khả dụng</div>
+          </div>
+          <div class="kpi-card warning">
+            <div class="kpi-title">Giờ cao điểm (Peak [17:00-22:00))</div>
+            <div class="kpi-value" id="occPeakRate">0%</div>
+            <div class="kpi-sub">Quy định theo BR27</div>
+          </div>
+          <div class="kpi-card success">
+            <div class="kpi-title">Giờ thấp điểm (Off-Peak)</div>
+            <div class="kpi-value" id="occOffPeakRate">0%</div>
+            <div class="kpi-sub">Khung 06:00-17:00 & 22:00-23:00</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Số sân hoạt động</div>
+            <div class="kpi-value" id="occCourtsCount">0</div>
+            <div class="kpi-sub" id="occBranchName">Chi nhánh đang chọn</div>
+          </div>
+        </div>
+
+        <!-- Court Breakdown Table -->
+        <h3 style="margin-bottom: 0.75rem; font-size: 1rem;">Chi tiết theo từng sân:</h3>
+        <div class="table-wrapper" style="margin-bottom: 1.5rem;">
+          <table>
+            <thead>
+              <tr>
+                <th>Tên Sân</th>
+                <th>Môn</th>
+                <th>Phút khả dụng (đã trừ bảo trì)</th>
+                <th>Phút đã dùng thực tế</th>
+                <th>Tỷ lệ lấp đầy chung</th>
+                <th>Tỷ lệ giờ Cao điểm</th>
+                <th>Tỷ lệ giờ Thấp điểm</th>
+              </tr>
+            </thead>
+            <tbody id="occCourtTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Daily Heatmap / Timeline -->
+        <h3 style="margin-bottom: 0.75rem; font-size: 1rem;">Diễn biến sử dụng theo ngày:</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Ngày</th>
+                <th>Phút khả dụng</th>
+                <th>Phút sử dụng</th>
+                <th>Tỷ lệ lấp đầy</th>
+                <th>Thanh đo</th>
+              </tr>
+            </thead>
+            <tbody id="occTimelineTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB UC50: Branch Revenue                   -->
+    <!-- ========================================== -->
+    <div id="tab-uc50" class="tab-pane">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">💵 Báo cáo Doanh thu Quản trị Chi nhánh (UC50)</h2>
+            <p class="panel-subtitle">Ghi nhận doanh thu thực tế giao hàng/dịch vụ & tách bạch công nợ (BR50, BR100, BR163, BR217, BR218)</p>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <label>Từ ngày:</label>
+            <input type="date" id="revFrom" class="filter-input" value="2026-11-01">
+          </div>
+          <div class="filter-group">
+            <label>Đến ngày:</label>
+            <input type="date" id="revTo" class="filter-input" value="2026-11-10">
+          </div>
+          <div class="filter-group">
+            <label>Hạng mục:</label>
+            <select id="revCategory" class="filter-select">
+              <option value="">Tất cả hạng mục</option>
+              <option value="COURT_FEES">Tiền thuê sân (Court Fees)</option>
+              <option value="EQUIPMENT_RENTALS">Thuê dụng cụ (Equipment Rentals)</option>
+              <option value="RETAIL">Hàng bán lẻ / Nước uống (Retail)</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Kênh thanh toán:</label>
+            <select id="revChannel" class="filter-select">
+              <option value="">Tất cả kênh (BR163)</option>
+              <option value="CASH">Tiền mặt (Cash)</option>
+              <option value="VNPAY">Cổng VNPay</option>
+              <option value="VIETQR">Mã VietQR</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="btnFilterRevenue">🔍 Lọc báo cáo</button>
+        </div>
+
+        <!-- KPI Grid: Revenue & Profit -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-title">Tổng Doanh thu Ghi nhận (Gross)</div>
+            <div class="kpi-value" id="revGross">0 đ</div>
+            <div class="kpi-sub">Dịch vụ đã hoàn tất / Giao hàng (BR217)</div>
+          </div>
+          <div class="kpi-card danger">
+            <div class="kpi-title">Tổng Hoàn tiền (Refunds)</div>
+            <div class="kpi-value" id="revRefunds">0 đ</div>
+            <div class="kpi-sub">Hủy sân theo chính sách</div>
+          </div>
+          <div class="kpi-card info">
+            <div class="kpi-title">Doanh thu Thuần (Net Revenue)</div>
+            <div class="kpi-value" id="revNet">0 đ</div>
+            <div class="kpi-sub">Net = Gross − Refunds</div>
+          </div>
+          <div class="kpi-card warning">
+            <div class="kpi-title">Giá vốn Trực tiếp (Direct COGS)</div>
+            <div class="kpi-value" id="revCogs">0 đ</div>
+            <div class="kpi-sub">Giá vốn hàng bán & hao mòn vợt</div>
+          </div>
+          <div class="kpi-card success">
+            <div class="kpi-title">Lợi nhuận gộp HĐ (BR218)</div>
+            <div class="kpi-value" id="revProfit">0 đ</div>
+            <div class="kpi-sub" id="revMargin">Biên lãi gộp: 0%</div>
+          </div>
+        </div>
+
+        <!-- Separate Liabilities Panel (BR217) -->
+        <div class="alert-box info" style="margin-bottom: 1.5rem;">
+          <div>
+            <strong>📋 Theo dõi Nghĩa vụ Nợ / Tiền gửi giữ hộ (BR217):</strong>
+            <div style="margin-top: 0.5rem; display: flex; gap: 2rem; flex-wrap: wrap;">
+              <span>• Thanh toán trước chưa phục vụ (Unserved Prepayments): <strong id="revPrepayments" style="color:#fff">0 đ</strong></span>
+              <span>• Tiền đặt cọc đang giữ (Active Deposits): <strong id="revDeposits" style="color:#fff">0 đ</strong></span>
+              <span>• Tổng nghĩa vụ nợ: <strong id="revTotalLiabilities" style="color:#fbbf24">0 đ</strong></span>
+            </div>
+            <p style="font-size: 0.75rem; margin-top: 0.3rem; color: #93c5fd;">
+              * Các khoản này không được ghi nhận vào doanh thu cho đến khi khách hoàn thành buổi chơi hoặc trả đồ.
+            </p>
+          </div>
+        </div>
+
+        <!-- Breakdown Tables -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem;">
+          <div>
+            <h3 style="margin-bottom: 0.75rem; font-size: 1rem;">Phân loại theo Doanh thu & Lợi nhuận:</h3>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Hạng mục</th>
+                    <th>Doanh thu thuần</th>
+                    <th>Giá vốn COGS</th>
+                    <th>Lãi gộp HĐ (BR218)</th>
+                    <th>Biên lãi</th>
+                  </tr>
+                </thead>
+                <tbody id="revCategoryTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom: 0.75rem; font-size: 1rem;">Dòng tiền theo Kênh thanh toán (BR163):</h3>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Kênh</th>
+                    <th>Doanh thu gộp</th>
+                    <th>Hoàn tiền</th>
+                    <th>Thuần thu</th>
+                    <th>Tỷ trọng</th>
+                  </tr>
+                </thead>
+                <tbody id="revChannelTableBody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB UC62: Chain Performance (Owner)        -->
+    <!-- ========================================== -->
+    <div id="tab-uc62" class="tab-pane">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">📊 Dashboard Điều hành Hiệu suất Toàn chuỗi (UC62)</h2>
+            <p class="panel-subtitle">Dành riêng cho Court Owner theo dõi đa chi nhánh (BR101, BR216, BR217, BR218)</p>
+          </div>
+        </div>
+
+        <div id="ownerNoticeUc62" class="alert-box warning" style="display: none;">
+          ⚠️ Bạn hiện đang đăng nhập với vai trò không phải Court Owner. Hãy chọn <strong>👑 Court Owner</strong> ở góc trên bên phải để xem dữ liệu toàn chuỗi.
+        </div>
+
+        <div id="ownerContentUc62">
+          <!-- Filter Bar -->
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>Từ ngày:</label>
+              <input type="date" id="chainFrom" class="filter-input" value="2026-11-01">
+            </div>
+            <div class="filter-group">
+              <label>Đến ngày:</label>
+              <input type="date" id="chainTo" class="filter-input" value="2026-11-10">
+            </div>
+            <div class="filter-group">
+              <label>Loại đặt sân:</label>
+              <select id="chainBookingType" class="filter-select">
+                <option value="">Tất cả hình thức</option>
+                <option value="SINGLE">Đặt vãng lai / Lẻ (Single)</option>
+                <option value="RECURRING">Cố định theo tháng (Recurring)</option>
+                <option value="WALK_IN">Khách đến trực tiếp (Walk-In)</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="btnFilterChain">🔍 Tổng hợp</button>
+          </div>
+
+          <!-- Chain KPIs -->
+          <div class="kpi-grid">
+            <div class="kpi-card info">
+              <div class="kpi-title">Doanh thu thuần Toàn chuỗi</div>
+              <div class="kpi-value" id="chainNetRevenue">0 đ</div>
+              <div class="kpi-sub">Tổng 2 chi nhánh</div>
+            </div>
+            <div class="kpi-card success">
+              <div class="kpi-title">Lợi nhuận gộp Hoạt động</div>
+              <div class="kpi-value" id="chainProfit">0 đ</div>
+              <div class="kpi-sub" id="chainMargin">Biên lãi: 0%</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Công suất Lấp đầy Chuỗi</div>
+              <div class="kpi-value" id="chainUtilization">0%</div>
+              <div class="kpi-sub" id="chainHours">0h đã sử dụng</div>
+            </div>
+            <div class="kpi-card danger">
+              <div class="kpi-title">Tỷ lệ bỏ ca (No-Show Rate)</div>
+              <div class="kpi-value" id="chainNoShowRate">0%</div>
+              <div class="kpi-sub" id="chainNoShowSessions">0 ca không đến</div>
+            </div>
+          </div>
+
+          <!-- Branch Rankings Table -->
+          <h3 style="margin-bottom: 0.75rem; font-size: 1rem;">Bảng xếp hạng Hiệu quả từng Chi nhánh:</h3>
+          <div class="table-wrapper" style="margin-bottom: 1.5rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Thứ hạng</th>
+                  <th>Chi nhánh</th>
+                  <th>Doanh thu thuần</th>
+                  <th>Lợi nhuận gộp HĐ</th>
+                  <th>Tỷ lệ lấp đầy</th>
+                  <th>Tỷ lệ No-Show</th>
+                  <th>Tổng ca đặt</th>
+                  <th>Hoàn hủy</th>
+                </tr>
+              </thead>
+              <tbody id="chainBranchTableBody">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB UC63: Chain Inventory (Owner)          -->
+    <!-- ========================================== -->
+    <div id="tab-uc63" class="tab-pane">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">📦 Quản lý Tồn kho Toàn chuỗi & Đề xuất Điều chuyển (UC63)</h2>
+            <p class="panel-subtitle">Tồn kho khả dụng (BR168, BR169), Hàng trung chuyển In-Transit (BR229) & Lệch kiểm kê (BR215)</p>
+          </div>
+        </div>
+
+        <div id="ownerNoticeUc63" class="alert-box warning" style="display: none;">
+          ⚠️ Bạn hiện đang đăng nhập với vai trò không phải Court Owner. Hãy chọn <strong>👑 Court Owner</strong> ở góc trên bên phải để xem dữ liệu kho toàn chuỗi.
+        </div>
+
+        <div id="ownerContentUc63">
+          <!-- Filter Bar -->
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>Chi nhánh:</label>
+              <select id="invFacility" class="filter-select">
+                <option value="">Tất cả chi nhánh</option>
+                <option value="facility-1">CourtChain Hòa Lạc</option>
+                <option value="facility-2">CourtChain Thạch Thất</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Phân loại:</label>
+              <select id="invCategory" class="filter-select">
+                <option value="">Tất cả loại</option>
+                <option value="RETAIL">Bán lẻ (Retail)</option>
+                <option value="RENTAL">Cho thuê (Rental)</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Tình trạng:</label>
+              <select id="invStatus" class="filter-select">
+                <option value="">Tất cả trạng thái</option>
+                <option value="IN_STOCK">Còn hàng (In Stock)</option>
+                <option value="LOW_STOCK">Sắp hết (Low Stock)</option>
+                <option value="OUT_OF_STOCK">Hết hàng (Out of Stock)</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Tìm kiếm:</label>
+              <input type="text" id="invSearch" class="filter-input" placeholder="Mã SKU hoặc tên SP...">
+            </div>
+            <button class="btn btn-primary" id="btnFilterInventory">🔍 Lọc kho</button>
+          </div>
+
+          <!-- Inventory KPIs -->
+          <div class="kpi-grid">
+            <div class="kpi-card info">
+              <div class="kpi-title">Tổng số mặt hàng SKU</div>
+              <div class="kpi-value" id="invTotalSkus">0</div>
+              <div class="kpi-sub">Trên toàn hệ thống</div>
+            </div>
+            <div class="kpi-card success">
+              <div class="kpi-title">Tổng Giá trị Định giá Kho</div>
+              <div class="kpi-value" id="invTotalValuation">0 đ</div>
+              <div class="kpi-sub">Theo giá vốn bình quân (MAC)</div>
+            </div>
+            <div class="kpi-card warning">
+              <div class="kpi-title">Cảnh báo Sắp hết (Low Stock)</div>
+              <div class="kpi-value" id="invLowStock">0</div>
+              <div class="kpi-sub">Dưới ngưỡng tái đặt hàng</div>
+            </div>
+            <div class="kpi-card danger">
+              <div class="kpi-title">Hết hàng (Out of Stock)</div>
+              <div class="kpi-value" id="invOutOfStock">0</div>
+              <div class="kpi-sub">Cần nhập gấp / điều chuyển</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-title">Đang trung chuyển (In-Transit)</div>
+              <div class="kpi-value" id="invInTransit">0</div>
+              <div class="kpi-sub">Theo quy tắc BR229</div>
+            </div>
+          </div>
+
+          <!-- Smart Transfer Suggestions (UC66 Assist) -->
+          <div class="panel" style="background: rgba(15, 23, 42, 0.6); border: 1px solid #3b82f6;">
+            <div class="panel-header" style="margin-bottom: 0.5rem;">
+              <h3 class="panel-title" style="color: #60a5fa;">💡 Gợi ý Điều chuyển Kho Liên Chi Nhánh (Hỗ trợ UC66)</h3>
+            </div>
+            <p class="panel-subtitle">Hệ thống tự động phát hiện chi nhánh thừa tồn kho khả dụng để bù cho chi nhánh đang thiếu hàng:</p>
+            <div id="transferSuggestionsContainer">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Inventory Items Table -->
+          <h3 style="margin-bottom: 0.75rem; font-size: 1rem;">Bảng Ma trận Tồn kho Chi tiết:</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã SKU</th>
+                  <th>Tên Sản phẩm</th>
+                  <th>Chi nhánh</th>
+                  <th>Phân loại</th>
+                  <th>Tồn vật lý</th>
+                  <th>Đang giữ</th>
+                  <th>Cách ly</th>
+                  <th>Khả dụng (BR169)</th>
+                  <th>In-Transit (BR229)</th>
+                  <th>Ngưỡng</th>
+                  <th>Trạng thái</th>
+                  <th>Giá vốn BQ</th>
+                  <th>Định giá</th>
+                  <th>Lệch kiểm kê (BR215)</th>
+                </tr>
+              </thead>
+              <tbody id="invTableBody">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODAL: UC48 Deactivate Staff Confirmation  -->
+  <!-- ========================================== -->
+  <div class="modal-overlay" id="deactivateModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">Xác nhận Vô hiệu hóa Tài khoản Nhân viên</h3>
+        <button class="modal-close" id="btnModalClose">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="modalShiftWarning" class="alert-box" style="display: none;">
+          <span>⛔</span>
+          <div>
+            <strong>Không thể vô hiệu hóa! (EX-1 / BR193)</strong>
+            <p>Nhân viên này đang có ca làm việc mở (Shift OPEN). Cần đóng và chốt ca trước khi vô hiệu hóa.</p>
+          </div>
+        </div>
+
+        <p style="margin-bottom: 0.75rem;">
+          Bạn đang yêu cầu vô hiệu hóa tài khoản của:
+        </p>
+        <div style="background: #172234; padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+          <div>Họ và tên: <strong id="modalStaffName" style="color: #fff">...</strong></div>
+          <div>Mã NV: <span id="modalStaffId">...</span> | Chi nhánh: <span id="modalStaffBranch">...</span></div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: #fff;">
+            Lý do vô hiệu hóa <span style="color: #ef4444">* (Bắt buộc)</span>:
+          </label>
+          <input type="text" id="modalReasonInput" class="filter-input" style="width: 100%;" placeholder="VD: Nghỉ việc, Hết hạn hợp đồng, Chuyển cơ sở...">
+        </div>
+
+        <div class="alert-box info" style="margin-bottom: 0;">
+          <span style="font-size: 1.1rem;">ℹ️</span>
+          <div>
+            Hệ thống sẽ ngay lập tức hủy tất cả phiên đăng nhập (JWT token), hủy phân công ca làm việc tương lai và lưu nhật ký kiểm toán (BR209, BR210).
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnModalCancel">Hủy bỏ (AF-1)</button>
+        <button class="btn btn-danger" id="btnModalConfirm">Xác nhận Vô hiệu hóa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
